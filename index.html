@@ -548,12 +548,13 @@
                   setLoadingMessage('Optimizing your design...');
                   designWithTransparentBg = await resizeImage(designWithTransparentBg);
                   
-                  setLoadingMessage('Applying your design to 4 mockups...');
-                  const appliedDesignsDataUrls = await Promise.all(
-                      resizedBlankMockupDataUrls.map(resizedDataUrl => 
-                          applyDesignToMockup(resizedDataUrl, designWithTransparentBg, controlState.product)
-                      )
-                  );
+                  const appliedDesignsDataUrls = [];
+                  for (let i = 0; i < resizedBlankMockupDataUrls.length; i++) {
+                      setLoadingMessage(`Applying your design (${i + 1} of 4)...`);
+                      const resizedDataUrl = resizedBlankMockupDataUrls[i];
+                      const finalImage = await applyDesignToMockup(resizedDataUrl, designWithTransparentBg, controlState.product);
+                      appliedDesignsDataUrls.push(finalImage);
+                  }
                   setMockupImages(appliedDesignsDataUrls);
               }
             } catch (e) { 
