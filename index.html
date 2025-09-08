@@ -524,8 +524,16 @@
                   
                   const prompt = `Photorealistic ${controlState.style} mockup of a blank ${controlState.productColor} ${controlState.product}, shown ${backgroundPrompt} ${modelPrompt} The product must be completely blank, with no logos or text. High-quality commercial photography.`;
 
-                  setLoadingMessage('Generating 4 photorealistic mockups...');
-                  const initialBlankMockupsBase64 = await generateMockupImage(prompt, 4);
+                  const initialBlankMockupsBase64 = [];
+                  for (let i = 0; i < 4; i++) {
+                      setLoadingMessage(`Generating photorealistic mockups (${i + 1} of 4)...`);
+                      const result = await generateMockupImage(prompt, 1);
+                      if (result && result.length > 0) {
+                          initialBlankMockupsBase64.push(result[0]);
+                      } else {
+                          throw new Error(`Mockup generation failed on image ${i + 1}. The AI may have returned an empty response.`);
+                      }
+                  }
                   
                   setLoadingMessage('Optimizing mockups...');
                   const resizedBlankMockupsBase64 = await Promise.all(
