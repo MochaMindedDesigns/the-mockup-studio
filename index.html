@@ -510,15 +510,20 @@
                   setMockupImages([`data:image/png;base64,${resultBase64}`]);
               } else {
                   // Standard flow: generates mockups from scratch.
-                  let backgroundDescription = 'a neutral, solid light gray background, perfect for isolating the product';
-                  if (controlState.background === 'styled') backgroundDescription = `a styled background that complements a ${controlState.style} product photo`;
+                  let backgroundPrompt = `on a neutral, solid light gray background to isolate the product.`;
+                  if (controlState.background === 'styled') {
+                      backgroundPrompt = `in a styled scene that complements a ${controlState.style} product photo.`;
+                  }
+
+                  let modelPrompt = '';
+                  if (controlState.productCategory === 'Apparel') {
+                      const isChildModel = controlState.modelGender === 'Boy' || controlState.modelGender === 'Girl';
+                      const modelAge = isChildModel ? `a child ${controlState.modelGender.toLowerCase()}` : `an adult`;
+                      modelPrompt = `The ${controlState.product} is worn by a ${controlState.modelEthnicity} ${modelAge} model. The model's face is not shown to keep the focus on the product.`;
+                  }
                   
-                  const isChildModel = controlState.modelGender === 'Boy' || controlState.modelGender === 'Girl';
-                  const modelAge = isChildModel ? `a child ${controlState.modelGender.toLowerCase()}` : `an adult ${controlState.modelGender.toLowerCase()}`;
-                  const modelDescription = controlState.productCategory === 'Apparel' ? ` with an anonymous ${modelAge} ${controlState.modelEthnicity} model, where the focus is on the apparel, not the model's face.` : '';
-                  
-                  const prompt = `A high-quality, photorealistic ${controlState.style} mockup of a blank product: a ${controlState.productColor} ${controlState.product}. No text or logos on the product. The scene is set on ${backgroundDescription}${modelDescription}.`;
-                  
+                  const prompt = `Photorealistic ${controlState.style} mockup of a blank ${controlState.productColor} ${controlState.product}, shown ${backgroundPrompt} ${modelPrompt} The product must be completely blank, with no logos or text. High-quality commercial photography.`;
+
                   setLoadingMessage('Generating 4 photorealistic mockups...');
                   const initialBlankMockupsBase64 = await generateMockupImage(prompt, 4);
                   
