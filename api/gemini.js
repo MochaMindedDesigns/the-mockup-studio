@@ -83,7 +83,7 @@ async function handleGenerateImage(ai, { prompt, numberOfImages }) {
 
 async function handleRemoveBackground(ai, { mimeType, data }) {
     const designPart = { inlineData: { mimeType, data } };
-    const textPart = { text: 'Remove the background from this image, leaving only the main subject. The background should be transparent, resulting in a PNG with an alpha channel.' };
+    const textPart = { text: 'Remove the background from this image, leaving only the main subject. The background must be transparent. The final output must be a web-optimized PNG file with an alpha channel, keeping the file size as small as possible for efficient web transfer.' };
     
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image-preview',
@@ -107,7 +107,7 @@ async function handleRemoveBackground(ai, { mimeType, data }) {
 async function handleApplyDesign(ai, { blankMockupBase64, blankMockupMimeType, designMimeType, designBase64, productName }) {
     const blankMockupPart = { inlineData: { mimeType: blankMockupMimeType, data: blankMockupBase64 } };
     const designPart = { inlineData: { mimeType: designMimeType, data: designBase64 } };
-    const textPart = { text: `Apply the second image (the artwork) onto the ${productName} in the first image (the mockup). The artwork should be placed naturally on the product, following its contours, shadows, and texture for a photorealistic result. Make sure the applied design is clearly visible and well-integrated.` };
+    const textPart = { text: `Apply the second image (the artwork) onto the ${productName} in the first image (the mockup). The artwork should be placed naturally on the product, following its contours, shadows, and texture for a photorealistic result. Make sure the applied design is clearly visible and well-integrated. The final output must be a web-optimized PNG file, keeping file size small for web transfer.` };
 
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image-preview',
@@ -132,7 +132,7 @@ async function handleAddDesignedProductToBackground(ai, { backgroundBase64, back
     const backgroundPart = { inlineData: { mimeType: backgroundMimeType, data: backgroundBase64 } };
     const designPart = { inlineData: { mimeType: designMimeType, data: designBase64 } };
     const textPart = { 
-        text: `On the first image (the background), add a photorealistic ${productColor} ${productName}. Then, apply the second image (the artwork) onto that new ${productName}. The result should be a seamless composite with realistic lighting and shadows. The added product should be the main focus and appropriately scaled for the scene.` 
+        text: `On the first image (the background), add a photorealistic ${productColor} ${productName}. Then, apply the second image (the artwork) onto that new ${productName}. The result should be a seamless composite with realistic lighting and shadows. The added product should be the main focus and appropriately scaled for the scene. The final output image must be a web-optimized PNG, suitable for efficient web transfer.` 
     };
 
     const response = await ai.models.generateContent({
