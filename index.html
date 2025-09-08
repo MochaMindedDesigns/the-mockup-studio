@@ -139,7 +139,7 @@
 
         async function generateMockupImage(prompt, numberOfImages) {
             const { images } = await callBackendApi('generateImage', { prompt, numberOfImages });
-            return images; // The backend now returns an array of base64 strings
+            return images; // The backend now returns an array of data URLs
         }
         
         const dataUrlToParts = (dataUrl) => {
@@ -156,20 +156,22 @@
             return image; // Backend returns the full data URL string
         }
 
-        async function applyDesignToMockup(blankMockupBase64, designDataUrl, productName) {
+        async function applyDesignToMockup(blankMockupDataUrl, designDataUrl, productName) {
             const { mimeType: designMimeType, data: designBase64 } = dataUrlToParts(designDataUrl);
+            const { mimeType: blankMockupMimeType, data: blankMockupBase64 } = dataUrlToParts(blankMockupDataUrl);
             const { image } = await callBackendApi('applyDesign', {
                 blankMockupBase64,
+                blankMockupMimeType,
                 designMimeType,
                 designBase64,
                 productName,
             });
-            return image; // Backend returns just the base64 data
+            return image; // Backend returns a full data URL
         }
 
         async function addDesignedProductToBackground(params) {
             const { image } = await callBackendApi('addDesignedProductToBackground', params);
-            return image; // Backend returns just the base64 data
+            return image; // Backend returns a full data URL
         }
 
         async function generateSeoListing(productName, designDescription) {
@@ -501,13 +503,13 @@
                   const { mimeType: designMimeType, data: designBase64 } = dataUrlToParts(controlState.design);
                   const { mimeType: backgroundMimeType, data: backgroundBase64 } = dataUrlToParts(controlState.customBackground);
                   
-                  const resultBase64 = await addDesignedProductToBackground({
+                  const resultDataUrl = await addDesignedProductToBackground({
                       backgroundBase64, backgroundMimeType,
                       designBase64, designMimeType,
                       productName: controlState.product,
                       productColor: controlState.productColor,
                   });
-                  setMockupImages([`data:image/png;base64,${resultBase64}`]);
+                  setMockupImages([resultDataUrl]);
               } else {
                   // Standard flow: generates mockups from scratch.
                   let backgroundPrompt = `on a neutral, solid light gray background to isolate the product.`;
@@ -524,38 +526,35 @@
                   
                   const prompt = `Photorealistic ${controlState.style} mockup of a blank ${controlState.productColor} ${controlState.product}, shown ${backgroundPrompt} ${modelPrompt} The product must be completely blank, with no logos or text. High-quality commercial photography.`;
 
-                  const initialBlankMockupsBase64 = [];
+                  const initialBlankMockupDataUrls = [];
                   for (let i = 0; i < 4; i++) {
                       setLoadingMessage(`Generating photorealistic mockups (${i + 1} of 4)...`);
                       const result = await generateMockupImage(prompt, 1);
                       if (result && result.length > 0) {
-                          initialBlankMockupsBase64.push(result[0]);
+                          initialBlankMockupDataUrls.push(result[0]);
                       } else {
                           throw new Error(`Mockup generation failed on image ${i + 1}. The AI may have returned an empty response.`);
                       }
                   }
                   
                   setLoadingMessage('Optimizing mockups...');
-                  const resizedBlankMockupsBase64 = await Promise.all(
-                    initialBlankMockupsBase64.map(async (base64) => {
-                      const dataUrl = `data:image/png;base64,${base64}`;
-                      const resizedDataUrl = await resizeImage(dataUrl);
-                      const parts = resizedDataUrl.split(',');
-                      return parts[1]; // Return just the base64 part
-                    })
+                  const resizedBlankMockupDataUrls = await Promise.all(
+                    initialBlankMockupDataUrls.map(dataUrl => resizeImage(dataUrl))
                   );
 
                   setLoadingMessage('Removing background from your design...');
-                  const designWithTransparentBg = await removeImageBackground(controlState.design);
+                  let designWithTransparentBg = await removeImageBackground(controlState.design);
+
+                  setLoadingMessage('Optimizing your design...');
+                  designWithTransparentBg = await resizeImage(designWithTransparentBg);
                   
                   setLoadingMessage('Applying your design to 4 mockups...');
-                  const appliedDesignsBase64 = await Promise.all(
-                      resizedBlankMockupsBase64.map(blankMockup => 
-                          applyDesignToMockup(blankMockup, designWithTransparentBg, controlState.product)
+                  const appliedDesignsDataUrls = await Promise.all(
+                      resizedBlankMockupDataUrls.map(resizedDataUrl => 
+                          applyDesignToMockup(resizedDataUrl, designWithTransparentBg, controlState.product)
                       )
                   );
-                  const finalMockupDataUrls = appliedDesignsBase64.map(img => `data:image/png;base64,${img}`);
-                  setMockupImages(finalMockupDataUrls);
+                  setMockupImages(appliedDesignsDataUrls);
               }
             } catch (e) { 
               console.error(e); 
