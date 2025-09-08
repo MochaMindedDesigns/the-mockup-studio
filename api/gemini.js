@@ -38,6 +38,9 @@ export default async function handler(req, res) {
             case 'applyDesign':
                 result = await handleApplyDesign(ai, params);
                 break;
+            case 'addDesignedProductToBackground':
+                result = await handleAddDesignedProductToBackground(ai, params);
+                break;
             case 'generateSeo':
                 result = await handleGenerateSeo(ai, params);
                 break;
@@ -122,6 +125,33 @@ async function handleApplyDesign(ai, { blankMockupBase64, designMimeType, design
     }
     throw new Error("Image editing failed to produce an image.");
 }
+
+async function handleAddDesignedProductToBackground(ai, { backgroundBase64, backgroundMimeType, designBase64, designMimeType, productName, productColor }) {
+    const backgroundPart = { inlineData: { mimeType: backgroundMimeType, data: backgroundBase64 } };
+    const designPart = { inlineData: { mimeType: designMimeType, data: designBase64 } };
+    const textPart = { 
+        text: `On the first image (the background), add a photorealistic ${productColor} ${productName}. Then, apply the second image (the artwork) onto that new ${productName}. The result should be a seamless composite with realistic lighting and shadows. The added product should be the main focus and appropriately scaled for the scene.` 
+    };
+
+    const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image-preview',
+        contents: { parts: [backgroundPart, designPart, textPart] },
+        config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
+    });
+    
+    const candidate = response.candidates?.[0];
+    if (!candidate || !candidate.content || !candidate.content.parts) {
+        throw new Error("Adding product to background failed. The AI did not return an image, possibly due to a safety filter.");
+    }
+
+    for (const part of candidate.content.parts) {
+        if (part.inlineData) {
+            return { image: part.inlineData.data };
+        }
+    }
+    throw new Error("Image editing failed to produce an image.");
+}
+
 
 async function handleGenerateSeo(ai, { productName, designDescription }) {
     const seoSchema = {
