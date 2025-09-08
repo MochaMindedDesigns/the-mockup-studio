@@ -444,7 +444,7 @@
             else if (controlState.background === 'custom' && controlState.customBackground) backgroundDescription = 'a background that is visually appealing and suitable for a product mockup, complementing the product color';
             const isChildModel = controlState.modelGender === 'Boy' || controlState.modelGender === 'Girl';
             const modelAge = isChildModel ? `a child ${controlState.modelGender.toLowerCase()}` : `an adult ${controlState.modelGender.toLowerCase()}`;
-            const modelDescription = controlState.productCategory === 'Apparel' ? ` with ${modelAge} ${controlState.modelEthnicity} model. The model's face should not be fully visible, cropped from the nose or neck down to keep the focus on the product.` : '';
+            const modelDescription = controlState.productCategory === 'Apparel' ? ` with an anonymous ${modelAge} ${controlState.modelEthnicity} model, where the focus is on the apparel, not the model's face.` : '';
             const prompt = `A high-quality, photorealistic ${controlState.style} mockup of a blank product: a ${controlState.productColor} ${controlState.product}. No text or logos on the product. The scene is set on ${backgroundDescription}${modelDescription}.`;
             try {
               setLoadingMessage('Generating 4 photorealistic mockups...');
