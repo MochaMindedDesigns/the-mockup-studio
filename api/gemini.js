@@ -86,7 +86,12 @@ async function handleRemoveBackground(ai, { mimeType, data }) {
         config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
     });
 
-    for (const part of response.candidates[0].content.parts) {
+    const candidate = response.candidates?.[0];
+    if (!candidate || !candidate.content || !candidate.content.parts) {
+        throw new Error("Background removal failed. The AI did not return an image, which might be due to a safety filter.");
+    }
+
+    for (const part of candidate.content.parts) {
         if (part.inlineData) {
             return { image: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}` };
         }
@@ -104,8 +109,13 @@ async function handleApplyDesign(ai, { blankMockupBase64, designMimeType, design
         contents: { parts: [blankMockupPart, designPart, textPart] },
         config: { responseModalities: [Modality.IMAGE, Modality.TEXT] },
     });
+    
+    const candidate = response.candidates?.[0];
+    if (!candidate || !candidate.content || !candidate.content.parts) {
+        throw new Error("Applying the design failed. The AI did not return an image, which might be due to a safety filter.");
+    }
 
-    for (const part of response.candidates[0].content.parts) {
+    for (const part of candidate.content.parts) {
         if (part.inlineData) {
             return { image: part.inlineData.data };
         }
