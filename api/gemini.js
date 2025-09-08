@@ -63,18 +63,20 @@ export default async function handler(req, res) {
 // --- Task Handlers ---
 
 async function handleGenerateImage(ai, { prompt, numberOfImages }) {
+    const mimeType = 'image/jpeg';
     const response = await ai.models.generateImages({
         model: 'imagen-4.0-generate-001',
         prompt: prompt,
         config: {
           numberOfImages: numberOfImages,
-          outputMimeType: 'image/png',
+          outputMimeType: mimeType,
           aspectRatio: '1:1',
         },
     });
 
     if (response.generatedImages && response.generatedImages.length > 0) {
-        return { images: response.generatedImages.map(img => img.image.imageBytes) };
+        const imagesAsDataUrls = response.generatedImages.map(img => `data:${mimeType};base64,${img.image.imageBytes}`);
+        return { images: imagesAsDataUrls };
     }
     throw new Error("Image generation failed to produce any images.");
 }
@@ -102,8 +104,8 @@ async function handleRemoveBackground(ai, { mimeType, data }) {
     throw new Error("Background removal failed to produce an image.");
 }
 
-async function handleApplyDesign(ai, { blankMockupBase64, designMimeType, designBase64, productName }) {
-    const blankMockupPart = { inlineData: { mimeType: 'image/png', data: blankMockupBase64 } };
+async function handleApplyDesign(ai, { blankMockupBase64, blankMockupMimeType, designMimeType, designBase64, productName }) {
+    const blankMockupPart = { inlineData: { mimeType: blankMockupMimeType, data: blankMockupBase64 } };
     const designPart = { inlineData: { mimeType: designMimeType, data: designBase64 } };
     const textPart = { text: `Apply the second image (the artwork) onto the ${productName} in the first image (the mockup). The artwork should be placed naturally on the product, following its contours, shadows, and texture for a photorealistic result. Make sure the applied design is clearly visible and well-integrated.` };
 
@@ -120,7 +122,7 @@ async function handleApplyDesign(ai, { blankMockupBase64, designMimeType, design
 
     for (const part of candidate.content.parts) {
         if (part.inlineData) {
-            return { image: part.inlineData.data };
+            return { image: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}` };
         }
     }
     throw new Error("Image editing failed to produce an image.");
@@ -146,7 +148,7 @@ async function handleAddDesignedProductToBackground(ai, { backgroundBase64, back
 
     for (const part of candidate.content.parts) {
         if (part.inlineData) {
-            return { image: part.inlineData.data };
+            return { image: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}` };
         }
     }
     throw new Error("Image editing failed to produce an image.");
