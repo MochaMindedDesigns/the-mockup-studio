@@ -119,26 +119,28 @@ async function handleGenerateSeo(ai, { productName, designDescription }) {
         properties: {
             title: {
                 type: Type.STRING,
-                description: "A catchy, SEO-friendly product title, under 80 characters.",
+                description: `A catchy, SEO-friendly product title for a ${productName}. The title must be under 80 characters.`,
             },
             description: {
                 type: Type.STRING,
-                description: "A detailed product description (200-300 words) that starts by identifying a customer pain point and presents the product as the perfect solution.",
+                description: `A detailed and compelling product description between 200 and 300 words. It should highlight the product's benefits and appeal to potential customers, written in a friendly, persuasive tone.`,
             },
             features: {
                 type: Type.ARRAY,
                 items: { type: Type.STRING },
-                description: "A bulleted list of 3-5 key product features.",
+                description: `A bulleted list of 3 to 5 key features of the ${productName}.`,
             },
             tags: {
                 type: Type.ARRAY,
                 items: { type: Type.STRING },
-                description: "A list of 10-15 relevant SEO tags/keywords for the product.",
+                description: `A list of 10 to 15 relevant SEO tags or keywords that a user might search for to find this ${productName}.`,
             }
         },
         required: ["title", "description", "features", "tags"],
     };
-    const prompt = `Generate a complete, SEO-friendly product listing for an online store. The product is a ${productName} featuring a design of ${designDescription}. Follow the provided JSON schema precisely.`;
+
+    // The prompt is now simpler, with detailed instructions moved to the schema descriptions for better reliability.
+    const prompt = `Generate an SEO-optimized product listing for a ${productName} with a design described as: ${designDescription}.`;
     
     const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -146,12 +148,13 @@ async function handleGenerateSeo(ai, { productName, designDescription }) {
         config: { responseMimeType: "application/json", responseSchema: seoSchema }
     });
     
-    const jsonText = response.text.trim();
     try {
-        return { content: JSON.parse(jsonText) };
+        // The Gemini API should return a string that is valid JSON. This is a safeguard.
+        const content = JSON.parse(response.text);
+        return { content };
     } catch (e) {
-        console.error("Failed to parse JSON response from Gemini:", jsonText);
-        throw new Error("The AI returned an invalid data format for the SEO content. Please try again.");
+        console.error("Failed to parse JSON response from Gemini:", response.text);
+        throw new Error("The AI returned data in an unexpected format. Please try generating the SEO listing again.");
     }
 }
 
